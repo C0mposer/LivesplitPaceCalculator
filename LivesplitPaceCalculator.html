@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveSplit Pace Calculator</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #4a90e2;
+            --hover-color: #357bd2;
+            --border-color: #444;
+            --success-bg: #2d412e;
+            --success-border: #4caf50;
+            --error-bg: #4a2d2d;
+            --error-border: #f44336;
+            --input-bg: #2d2d2d;
+            --list-bg: #282828;
+            --spinner-color: #4a90e2;
+            --copy-btn-bg: #555;
+            --copy-btn-hover: #777;
+            --gold-color: #FFD700;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            line-height: 1.6;
+            margin: 0;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: var(--container-bg);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        p {
+            color: #b0b0b0;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        input[type="file"], select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            transition: border-color 0.3s;
+        }
+        input[type="file"]:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        button:hover {
+            background-color: var(--hover-color);
+        }
+        button:active {
+            transform: scale(0.99);
+        }
+        #results {
+            margin-top: 2rem;
+            text-align: left;
+        }
+        #results .success-box {
+            background-color: var(--success-bg);
+            border-left: 5px solid var(--success-border);
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow: hidden; 
+        }
+        #results .error-box {
+            background-color: var(--error-bg);
+            border-left: 5px solid var(--error-border);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        #results h2 {
+            margin-top: 0;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        #results h3 {
+            font-size: 1.25rem;
+            margin: 0.5rem 0;
+            color: #b0b0b0;
+        }
+        #results h3 strong {
+            color: var(--text-color);
+        }
+        #results .golden-time {
+            color: var(--gold-color);
+        }
+        #results hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 1.5rem 0;
+        }
+        
+        .segment-list-container {
+            margin-top: 1.5rem;
+        }
+        .list-header, .segment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+        .list-header {
+            border-bottom: 2px solid var(--border-color);
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+        .segment-item {
+            border-bottom: 1px solid var(--border-color);
+        }
+        .segment-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-header .header-name,
+        .segment-item .segment-name {
+            flex: 1;
+            word-break: break-word;
+            padding-right: 1rem;
+        }
+        
+        .list-header .header-segment,
+        .list-header .header-split,
+        .segment-item .segment-duration,
+        .segment-item .split-time {
+            width: 100px;
+            text-align: right;
+            font-family: monospace;
+            white-space: nowrap;
+        }
+
+        .segment-item .segment-name {
+            color: #b0b0b0;
+        }
+
+        #copy-button {
+            margin-top: 1rem;
+            background-color: var(--copy-btn-bg);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #copy-button:hover {
+            background-color: var(--copy-btn-hover);
+        }
+        .loading-spinner {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--spinner-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .navigation-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1rem;
+            gap: 1rem;
+        }
+        .nav-btn {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .nav-btn:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .nav-btn:disabled {
+            border-color: var(--border-color);
+            color: var(--border-color);
+            cursor: not-allowed;
+        }
+        .run-counter {
+            font-size: 1rem;
+            color: #b0b0b0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LiveSplit Pace Calculator</h1>
+        <p>Upload your LiveSplit (.lss) file to find the fastest pace between any two splits in your history.</p>
+        
+        <form id="pace-form">
+            <div class="form-group">
+                <label for="lssFile">Upload .lss File:</label>
+                <input type="file" id="lssFile" name="lssFile" accept=".lss" required>
+            </div>
+            <div class="form-group">
+                <label for="startSplit">Starting Split:</label>
+                <select id="startSplit" disabled required></select>
+            </div>
+            <div class="form-group">
+                <label for="endSplit">Ending Split:</label>
+                <select id="endSplit" disabled required></select>
+            </div>
+            <button type="submit" id="calculateBtn" disabled>Calculate Best Pace</button>
+        </form>
+        
+        <div class="loading-spinner" id="spinner"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const lssFile = document.getElementById('lssFile');
+            const startSplitSelect = document.getElementById('startSplit');
+            const endSplitSelect = document.getElementById('endSplit');
+            const calculateBtn = document.getElementById('calculateBtn');
+            const spinner = document.getElementById('spinner');
+            const resultsDiv = document.getElementById('results');
+
+            let xmlDoc = null;
+            let splitNames = [];
+            let lastCopiedText = '';
+            let bestPaces = [];
+            let currentRunIndex = 0;
+
+            function parseTime(timeStr) {
+                if (!timeStr) return null;
+                const parts = timeStr.split(':');
+                let hours = 0, minutes = 0, seconds = 0, milliseconds = 0;
+                try {
+                    if (timeStr.includes('.')) {
+                        const [s_ms] = parts.slice(-1);
+                        const [s, ms] = s_ms.split('.');
+                        seconds = parseInt(s);
+                        milliseconds = parseInt(ms.padEnd(3, '0').substring(0, 3));
+                        if (parts.length > 1) minutes = parseInt(parts[parts.length - 2]);
+                        if (parts.length > 2) hours = parseInt(parts[parts.length - 3]);
+                    } else {
+                        seconds = parseInt(parts.pop());
+                        if (parts.length > 0) minutes = parseInt(parts.pop());
+                        if (parts.length > 0) hours = parseInt(parts.pop());
+                    }
+                    return (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            function formatDate(dateStr) {
+                if (!dateStr) return "N/A";
+                const date = new Date(dateStr);
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            }
+
+            function formatTime(ms) {
+                if (ms === null || isNaN(ms)) return "N/A";
+                let seconds = Math.floor(ms / 1000);
+                let minutes = Math.floor(seconds / 60);
+                let hours = Math.floor(minutes / 60);
+                milliseconds = ms % 1000;
+                seconds %= 60;
+                minutes %= 60;
+                
+                if (hours > 0) {
+                    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+                } else {
+                    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+                }
+            }
+            
+            function getOrdinalSuffix(number) {
+                if (number > 3 && number < 21) return 'th';
+                switch (number % 10) {
+                    case 1: return 'st';
+                    case 2: return 'nd';
+                    case 3: return 'rd';
+                    default: return 'th';
+                }
+            }
+
+            lssFile.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    startSplitSelect.disabled = true;
+                    endSplitSelect.disabled = true;
+                    calculateBtn.disabled = true;
+                    resultsDiv.innerHTML = '';
+                    return;
+                }
+
+                resultsDiv.innerHTML = '';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const xmlString = e.target.result;
+                    try {
+                        const parser = new DOMParser();
+                        xmlDoc = parser.parseFromString(xmlString, "application/xml");
+                        
+                        splitNames = [];
+                        const segments = xmlDoc.querySelectorAll('Segment');
+                        segments.forEach(segment => {
+                            const name = segment.querySelector('Name')?.textContent;
+                            if (name) splitNames.push(name);
+                        });
+
+                        if (splitNames.length > 0) {
+                            populateSplitSelects(splitNames);
+                            startSplitSelect.disabled = false;
+                            endSplitSelect.disabled = false;
+                            calculateBtn.disabled = false;
+                        } else {
+                            displayError("Error: No segments found in the .lss file. Please check the file format.");
+                            startSplitSelect.disabled = true;
+                            endSplitSelect.disabled = true;
+                            calculateBtn.disabled = true;
+                        }
+                    } catch (error) {
+                        displayError(`Error parsing XML file: ${error.message}`);
+                        startSplitSelect.disabled = true;
+                        endSplitSelect.disabled = true;
+                        calculateBtn.disabled = true;
+                    }
+                };
+                reader.onerror = () => {
+                    displayError("Error reading file.");
+                };
+                reader.readAsText(file);
+            });
+
+            function populateSplitSelects(names) {
+                startSplitSelect.innerHTML = '<option value="">Select a split...</option>';
+                endSplitSelect.innerHTML = '<option value="">Select a split...</option>';
+                names.forEach(name => {
+                    const optionStart = document.createElement('option');
+                    optionStart.value = name;
+                    optionStart.textContent = name;
+                    startSplitSelect.appendChild(optionStart);
+
+                    const optionEnd = document.createElement('option');
+                    optionEnd.value = name;
+                    optionEnd.textContent = name;
+                    endSplitSelect.appendChild(optionEnd);
+                });
+            }
+
+            document.getElementById('pace-form').addEventListener('submit', (event) => {
+                event.preventDefault();
+                spinner.style.display = 'block';
+                resultsDiv.innerHTML = '';
+
+                const startSplitName = startSplitSelect.value;
+                const endSplitName = endSplitSelect.value;
+                
+                if (!startSplitName || !endSplitName) {
+                    displayError("Please select both a starting and ending split.");
+                    spinner.style.display = 'none';
+                    return;
+                }
+                
+                if (splitNames.indexOf(startSplitName) >= splitNames.indexOf(endSplitName)) {
+                    displayError("The starting split must come before the ending split.");
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                setTimeout(() => {
+                    calculateBestPace(xmlDoc, startSplitName, endSplitName);
+                    spinner.style.display = 'none';
+                }, 500);
+            });
+
+            function calculateBestPace(xml, startSplitName, endSplitName) {
+                const segments = xml.querySelectorAll('Segment');
+                const attemptData = {};
+                const attemptDates = {};
+                const splitIndexStart = splitNames.indexOf(startSplitName);
+                const splitIndexEnd = splitNames.indexOf(endSplitName);
+                const segmentsInSelection = splitNames.slice(splitIndexStart, splitIndexEnd + 1);
+
+                // Populate attempt dates first
+                const attemptHistory = xml.querySelector('AttemptHistory');
+                if (attemptHistory) {
+                    attemptHistory.querySelectorAll('Attempt').forEach(attemptElement => {
+                        const id = attemptElement.getAttribute('id');
+                        const started = attemptElement.getAttribute('started');
+                        if (id && parseInt(id, 10) > 0 && started) {
+                            attemptDates[id] = started;
+                        }
+                    });
+                }
+                
+                segments.forEach(segment => {
+                    const name = segment.querySelector('Name')?.textContent;
+                    const history = segment.querySelector('SegmentHistory');
+                    if (history) {
+                        history.querySelectorAll('Time').forEach(timeElement => {
+                            const attemptId = timeElement.getAttribute('id');
+                            if (!attemptId || parseInt(attemptId, 10) <= 0 || !attemptDates[attemptId]) return;
+
+                            const realTimeElement = timeElement.querySelector('RealTime');
+                            if (realTimeElement) {
+                                const realTime = parseTime(realTimeElement.textContent);
+                                if (!attemptData[attemptId]) attemptData[attemptId] = {};
+                                attemptData[attemptId][name] = realTime;
+                            }
+                        });
+                    }
+                });
+
+                const cumulativeTimes = {};
+                for (const [attemptId, splits] of Object.entries(attemptData)) {
+                    let currentCumulativeTime = 0;
+                    cumulativeTimes[attemptId] = {};
+                    let incompleteSelection = false;
+                    
+                    segments.forEach(segment => {
+                        const segmentName = segment.querySelector('Name')?.textContent;
+                        const segmentDuration = splits[segmentName];
+                        
+                        // Check if a segment within the selection is missing
+                        if (segmentsInSelection.includes(segmentName) && (segmentDuration === null || segmentDuration === undefined)) {
+                            incompleteSelection = true;
+                        }
+                        
+                        if (segmentDuration !== null && segmentDuration !== undefined) {
+                            currentCumulativeTime += segmentDuration;
+                            cumulativeTimes[attemptId][segmentName] = currentCumulativeTime;
+                        } else {
+                            cumulativeTimes[attemptId][segmentName] = null;
+                        }
+                    });
+
+                    // If any segment in the selected range was skipped, remove this run from consideration
+                    if (incompleteSelection) {
+                        delete cumulativeTimes[attemptId];
+                    }
+                }
+                
+                bestPaces = [];
+                for (const [attemptId, times] of Object.entries(cumulativeTimes)) {
+                    if (times[startSplitName] !== null && times[endSplitName] !== null) {
+                        const startTime = times[startSplitName];
+                        const endTime = times[endSplitName];
+                        const segmentDuration = endTime - startTime;
+                        bestPaces.push({
+                            pace: segmentDuration,
+                            attemptId: attemptId,
+                            date: attemptDates[attemptId],
+                            cumulativeTimes: cumulativeTimes[attemptId],
+                            attemptData: attemptData[attemptId],
+                            startSplitName,
+                            endSplitName
+                        });
+                    }
+                }
+
+                if (bestPaces.length > 0) {
+                    bestPaces.sort((a, b) => a.pace - b.pace);
+                    currentRunIndex = 0;
+                    displayRankedRun(currentRunIndex);
+                } else {
+                    displayError("Could not find a valid run where all splits in the selected range were completed. Please try a different range or check the file's history for a run with valid times for all splits.");
+                }
+            }
+
+            function displayRankedRun(index) {
+                const run = bestPaces[index];
+                const rankText = `${index + 1}${getOrdinalSuffix(index + 1)} Fastest Pace`;
+                
+                const resultsHtml = `
+                    <div class="success-box">
+                        <div class="navigation-controls">
+                            <button id="prevBtn" class="nav-btn" aria-label="Previous run">‹</button>
+                            <span class="run-counter">${index + 1} of ${bestPaces.length}</span>
+                            <button id="nextBtn" class="nav-btn" aria-label="Next run">›</button>
+                        </div>
+                        <h2>🏆 Best Pace Found!</h2>
+                        <h3><span class="result-label">Segment:</span> <strong>${run.startSplitName} to ${run.endSplitName}</strong></h3>
+                        <hr>
+                        <h3><span class="result-label" id="paceRankLabel">${rankText}:</span> <strong class="golden-time">${formatTime(run.pace)}</strong></h3>
+                        <h3><span class="result-label">Achieved on Date:</span> <strong>${formatDate(run.date)}</strong></h3>
+                        <h3><span class="result-label">Achieved on Attempt:</span> <strong>${run.attemptId}</strong></h3>
+                        <hr>
+                        <h3>Individual Segment Times for this Run:</h3>
+                        <div class="segment-list-container">
+                            ${generateSegmentListHtml(run.attemptId, run.startSplitName, run.endSplitName, run.attemptData, run.cumulativeTimes)}
+                        </div>
+                        <button id="copy-button">Copy Segment Times</button>
+                    </div>
+                `;
+                resultsDiv.innerHTML = resultsHtml;
+
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const copyBtn = document.getElementById('copy-button');
+
+                prevBtn.disabled = index === 0;
+                nextBtn.disabled = index === bestPaces.length - 1;
+
+                prevBtn.addEventListener('click', () => {
+                    if (currentRunIndex > 0) {
+                        currentRunIndex--;
+                        displayRankedRun(currentRunIndex);
+                    }
+                });
+                
+                nextBtn.addEventListener('click', () => {
+                    if (currentRunIndex < bestPaces.length - 1) {
+                        currentRunIndex++;
+                        displayRankedRun(currentRunIndex);
+                    }
+                });
+
+                copyBtn.addEventListener('click', () => {
+                    const runToCopy = bestPaces[currentRunIndex];
+                    lastCopiedText = generateSegmentTimesText(runToCopy.startSplitName, runToCopy.endSplitName, runToCopy.attemptData);
+                    copySegments();
+                });
+            }
+
+            function displayError(message) {
+                resultsDiv.innerHTML = `<div class="error-box"><h2>❌ Calculation Error</h2><p>${message}</p></div>`;
+            }
+
+            function generateSegmentListHtml(bestAttemptId, startSplitName, endSplitName, attemptData, cumulativeTimes) {
+                const segments = xmlDoc.querySelectorAll('Segment');
+                let foundStart = false;
+                let listHtml = `<div class="list-header"><div class="header-name">Split Name</div><div class="header-segment">Segment Time</div><div class="header-split">Split Time</div></div>`;
+
+                segments.forEach(segment => {
+                    const name = segment.querySelector('Name')?.textContent;
+                    if (name === startSplitName) foundStart = true;
+                    if (foundStart && cumulativeTimes[name] !== null) {
+                        const segmentTime = formatTime(attemptData[name]);
+                        const splitTime = formatTime(cumulativeTimes[name]);
+                        listHtml += `<div class="segment-item"><div class="segment-name">${name}</div><div class="segment-duration">${segmentTime}</div><div class="split-time">${splitTime}</div></div>`;
+                    }
+                    if (name === endSplitName) foundStart = false;
+                });
+                return listHtml;
+            }
+
+            function generateSegmentTimesText(startSplitName, endSplitName, attemptData) {
+                const segments = xmlDoc.querySelectorAll('Segment');
+                let foundStart = false;
+                let segmentTimes = [];
+
+                segments.forEach(segment => {
+                    const name = segment.querySelector('Name')?.textContent;
+                    if (name === startSplitName) foundStart = true;
+                    if (foundStart && attemptData[name] !== null && attemptData[name] !== undefined) {
+                        const segmentTime = formatTime(attemptData[name]);
+                        segmentTimes.push(segmentTime);
+                    }
+                    if (name === endSplitName) foundStart = false;
+                });
+                return segmentTimes.join('\n');
+            }
+
+            function copySegments() {
+                if (lastCopiedText) {
+                    navigator.clipboard.writeText(lastCopiedText).then(() => {
+                        const copyBtn = document.getElementById('copy-button');
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Copy Times';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
