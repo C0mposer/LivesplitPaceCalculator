@@ -389,7 +389,7 @@
             });
 
             function populateSplitSelects(names) {
-                startSplitSelect.innerHTML = '<option value="">Select a split...</option>';
+                startSplitSelect.innerHTML = '<option value="">Select a split...</option><option value="start_of_run">Start of Run</option>';
                 endSplitSelect.innerHTML = '<option value="">Select a split...</option>';
                 names.forEach(name => {
                     const optionStart = document.createElement('option');
@@ -418,7 +418,7 @@
                     return;
                 }
                 
-                if (splitNames.indexOf(startSplitName) >= splitNames.indexOf(endSplitName)) {
+                if (startSplitName !== 'start_of_run' && splitNames.indexOf(startSplitName) >= splitNames.indexOf(endSplitName)) {
                     displayError("The starting split must come before the ending split.");
                     spinner.style.display = 'none';
                     return;
@@ -473,13 +473,16 @@
                     let currentCumulativeTime = 0;
                     cumulativeTimes[attemptId] = {};
                     let incompleteSelection = false;
-                    
-                    segments.forEach(segment => {
+
+                    // The segment index where to start checking for null times
+                    const startCheckIndex = (startSplitName === 'start_of_run') ? 0 : splitIndexStart;
+
+                    segments.forEach((segment, index) => {
                         const segmentName = segment.querySelector('Name')?.textContent;
                         const segmentDuration = splits[segmentName];
                         
-                        // Check if a segment within the selection is missing
-                        if (segmentsInSelection.includes(segmentName) && (segmentDuration === null || segmentDuration === undefined)) {
+                        // Check if a segment within the selected range is missing
+                        if (index >= startCheckIndex && index <= splitIndexEnd && (segmentDuration === null || segmentDuration === undefined)) {
                             incompleteSelection = true;
                         }
                         
@@ -499,9 +502,10 @@
                 
                 bestPaces = [];
                 for (const [attemptId, times] of Object.entries(cumulativeTimes)) {
-                    if (times[startSplitName] !== null && times[endSplitName] !== null) {
-                        const startTime = times[startSplitName];
-                        const endTime = times[endSplitName];
+                    const startTime = (startSplitName === 'start_of_run') ? 0 : times[startSplitName];
+                    const endTime = times[endSplitName];
+                    
+                    if (startTime !== null && endTime !== null) {
                         const segmentDuration = endTime - startTime;
                         bestPaces.push({
                             pace: segmentDuration,
@@ -526,7 +530,8 @@
 
             function displayRankedRun(index) {
                 const run = bestPaces[index];
-                const rankText = `${index + 1}${getOrdinalSuffix(index + 1)} Fastest Pace`;
+                const rankText = `${index + 1}${getOrdinalSuffix(index + 1)} fastest pace`;
+                const segmentText = run.startSplitName === 'start_of_run' ? 'Start of Run' : run.startSplitName;
                 
                 const resultsHtml = `
                     <div class="success-box">
@@ -536,7 +541,7 @@
                             <button id="nextBtn" class="nav-btn" aria-label="Next run">›</button>
                         </div>
                         <h2>🏆 Best Pace Found!</h2>
-                        <h3><span class="result-label">Segment:</span> <strong>${run.startSplitName} to ${run.endSplitName}</strong></h3>
+                        <h3><span class="result-label">Segment:</span> <strong>${segmentText} to ${run.endSplitName}</strong></h3>
                         <hr>
                         <h3><span class="result-label" id="paceRankLabel">${rankText}:</span> <strong class="golden-time">${formatTime(run.pace)}</strong></h3>
                         <h3><span class="result-label">Achieved on Date:</span> <strong>${formatDate(run.date)}</strong></h3>
@@ -585,7 +590,7 @@
 
             function generateSegmentListHtml(bestAttemptId, startSplitName, endSplitName, attemptData, cumulativeTimes) {
                 const segments = xmlDoc.querySelectorAll('Segment');
-                let foundStart = false;
+                let foundStart = (startSplitName === 'start_of_run');
                 let listHtml = `<div class="list-header"><div class="header-name">Split Name</div><div class="header-segment">Segment Time</div><div class="header-split">Split Time</div></div>`;
 
                 segments.forEach(segment => {
@@ -603,7 +608,7 @@
 
             function generateSegmentTimesText(startSplitName, endSplitName, attemptData) {
                 const segments = xmlDoc.querySelectorAll('Segment');
-                let foundStart = false;
+                let foundStart = (startSplitName === 'start_of_run');
                 let segmentTimes = [];
 
                 segments.forEach(segment => {
